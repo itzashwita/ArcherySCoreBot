@@ -24,7 +24,7 @@ category = st.sidebar.selectbox(
     ["Practice", "Qualification", "Final Round"]
 )
 
-input_type = st.radio("Select Input Type", ["Image", "Video", "Webcam"])
+input_type = st.radio("Select Input Type", ["Image", "Video", "Webcam", "Mobile Camera"])
 
 SCORE_PER_ARROW = 10
 EXCEL_FILE = "scores.xlsx"
@@ -67,7 +67,7 @@ if input_type == "Image":
         bytes_data = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
         image = cv2.imdecode(bytes_data, cv2.IMREAD_COLOR)
 
-        results = model(image, conf=0.1)   # show all boxes
+        results = model(image, conf=0.1)
         annotated = results[0].plot()
 
         num_arrows = count_valid_arrows(results[0])
@@ -107,7 +107,7 @@ elif input_type == "Video":
             if not ret:
                 break
 
-            results = model(frame, conf=0.1)  # show all boxes
+            results = model(frame, conf=0.1)
             annotated = results[0].plot()
 
             final_arrows = count_valid_arrows(results[0])
@@ -141,7 +141,7 @@ elif input_type == "Webcam":
         if not ret:
             break
 
-        results = model(frame, conf=0.1)   # show all boxes
+        results = model(frame, conf=0.1)
         annotated = results[0].plot()
 
         last_arrows = count_valid_arrows(results[0])
@@ -162,3 +162,32 @@ elif input_type == "Webcam":
     if st.button("💾 Save Final Score"):
         save_score(name, category, input_type, last_arrows, total_score)
         st.success("Score saved successfully!")
+
+# ---------------- MOBILE CAMERA ----------------
+elif input_type == "Mobile Camera":
+
+    photo = st.camera_input("Take a picture of the target")
+
+    if photo is not None:
+        bytes_data = np.asarray(bytearray(photo.read()), dtype=np.uint8)
+        image = cv2.imdecode(bytes_data, cv2.IMREAD_COLOR)
+
+        results = model(image, conf=0.1)
+        annotated = results[0].plot()
+
+        num_arrows = count_valid_arrows(results[0])
+        total_score = num_arrows * SCORE_PER_ARROW
+
+        col1, col2 = st.columns([3,1])
+
+        with col1:
+            st.image(annotated, channels="BGR")
+
+        with col2:
+            st.subheader("📊 Score Board")
+            st.metric("Arrows Detected", num_arrows)
+            st.metric("Total Score", total_score)
+
+            if st.button("💾 Save Score"):
+                save_score(name, category, input_type, num_arrows, total_score)
+                st.success("Score saved successfully!")
